@@ -17,3 +17,5 @@ Search keywords are case sensitive
 ## Disclaimer
 
 You need a PRO account to use this: pastebin will **block/blacklist** your IP.
+
+[pastebin PRO](https://pastebin.com/pro)
