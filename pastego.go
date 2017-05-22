@@ -17,9 +17,9 @@ import (
 )
 
 var paste string = "https://pastebin.com"
-var cleaners = []string{"/pro", "/scraping", "/archive", "/deals/", "/trends", "/api", "/tools", "/faq", "/login", "/messages", "/alerts", "/settings"}
 var links []string
 
+// Command line args
 var (
 	searchFor = kingpin.Flag("search", "Strings to search").Short('s').Default("pass").String()
 )
@@ -43,21 +43,6 @@ func contains(link string, cleaners []string) bool {
 		}
 	}
 	return false
-}
-
-func pasteCollector() {
-	doc, err := goquery.NewDocument(paste + "/archive")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	doc.Find("a").Each(func(index int, item *goquery.Selection) {
-		linkTag := item
-		link, _ := linkTag.Attr("href")
-		if !contains(link, cleaners) {
-			links = append(links, link)
-		}
-	})
 }
 
 func pasteSearcher(link *pasteJSON) {
@@ -89,8 +74,8 @@ func getBins() []pasteJSON {
 	// read []byte{}
 	b, _ := ioutil.ReadAll(r.Body)
 
-	// Due to some presence of unicode char converto JSON to string than parse it
-	// Go strings works with utf-8
+	// Due to some presence of unicode chars convert raw JSON to string than parse it
+	// GO strings works with utf-8
 	if err = json.NewDecoder(strings.NewReader(string(b))).Decode(&out); err != nil {
 		if strings.Contains(string(b), slowDown) || string(b) == "" {
 			fmt.Printf("Slow down!\n\n")
@@ -104,7 +89,7 @@ func getBins() []pasteJSON {
 }
 
 func saveToFile(link *pasteJSON, text string) {
-	_ = os.Mkdir("results", os.FileMode(0775))
+	os.Mkdir("results", os.FileMode(0775))
 	var title string = "results/"
 	if link.Title == "" {
 		title += link.Key
