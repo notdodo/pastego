@@ -1,9 +1,12 @@
 # pastego
-Parse pastebin from API using GO
+
+Scrape pastebin with API using GO
 
 ## Usage
 
-pastego -s "password,keygen,PASSWORD"
+Search keywords are case sensitive
+
+`pastego -s "password,keygen,PASSWORD"`
 
 ## Requirements
 
