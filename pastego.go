@@ -21,7 +21,9 @@ var links []string
 
 // Command line args
 var (
-	searchFor = kingpin.Flag("search", "Strings to search").Short('s').Default("pass").String()
+	searchFor  = kingpin.Flag("search", "Strings to search").Short('s').Default("pass").String()
+	outputTo   = kingpin.Flag("output", "Folder to save the pastes").Short('o').Default("results").String()
+	caseInsens = kingpin.Flag("insensitive", "Search for case-insensitive strings").Default("false").Short('i').Bool()
 )
 
 type pasteJSON struct {
@@ -36,13 +38,20 @@ type pasteJSON struct {
 	User      string `json:"user"`
 }
 
-func contains(link string, cleaners []string) bool {
+func contains(link string, cleaners []string) (bool, string) {
 	for _, clr := range cleaners {
-		if strings.Contains(link, clr) {
-			return true
+		if *caseInsens {
+			if strings.EqualFold(link, clr) {
+				return true, clr
+			}
+		} else {
+			if strings.Contains(link, clr) {
+				return true, clr
+			}
+
 		}
 	}
-	return false
+	return false, ""
 }
 
 func pasteSearcher(link *pasteJSON) {
@@ -52,17 +61,18 @@ func pasteSearcher(link *pasteJSON) {
 		log.Fatal(err)
 	}
 	doc.Find("body").Each(func(index int, item *goquery.Selection) {
-		if contains(item.Text(), strings.Split(*searchFor, ",")) {
-			fmt.Printf("%s\n", link.FullURL)
-			saveToFile(link, item.Text())
+		if res, match := contains(item.Text(), strings.Split(*searchFor, ",")); res {
+			fmt.Printf("%s - %s\n", match, link.FullURL)
+			saveToFile(link, item.Text(), match)
 		}
 	})
 }
 
-func getBins() []pasteJSON {
-	var url string = "https://pastebin.com/api_scraping.php?limit=250"
+func getBins(bins int) []pasteJSON {
+	var url string = "https://pastebin.com/api_scraping.php?limit=" + fmt.Sprint(bins)
 	var slowDown string = "Please slow down"
-	var client = &http.Client{Timeout: 5 * time.Second}
+	var trans = &http.Transport{DisableKeepAlives: false}
+	var client = &http.Client{Timeout: 5 * time.Second, Transport: trans}
 	var out []pasteJSON
 
 	r, err := client.Get(url)
@@ -70,7 +80,9 @@ func getBins() []pasteJSON {
 		fmt.Printf("get\n\n")
 		log.Fatal(err)
 	}
-	defer r.Body.Close()
+	if r != nil {
+		defer r.Body.Close()
+	}
 	// read []byte{}
 	b, _ := ioutil.ReadAll(r.Body)
 
@@ -88,9 +100,9 @@ func getBins() []pasteJSON {
 	return out
 }
 
-func saveToFile(link *pasteJSON, text string) {
-	os.Mkdir("results", os.FileMode(0775))
-	var title string = "results/"
+func saveToFile(link *pasteJSON, text string, match string) {
+	os.Mkdir(*outputTo, os.FileMode(0775))
+	var title string = fmt.Sprintf("%s/%s - ", *outputTo, match)
 	if link.Title == "" {
 		title += link.Key
 	} else {
@@ -104,13 +116,13 @@ func saveToFile(link *pasteJSON, text string) {
 	}
 }
 
-func run(interval int) {
-	for _, v := range getBins() {
+func run(interval int, bins int) {
+	for _, v := range getBins(bins) {
 		pasteSearcher(&v)
 	}
 	for range time.NewTicker(time.Duration(interval) * time.Second).C {
 		fmt.Printf("Restarting...\n")
-		for _, v := range getBins() {
+		for _, v := range getBins(bins) {
 			pasteSearcher(&v)
 		}
 		fmt.Printf("Done!\n\n")
@@ -119,5 +131,5 @@ func run(interval int) {
 
 func main() {
 	kingpin.Parse()
-	run(120)
+	run(120, 250)
 }
