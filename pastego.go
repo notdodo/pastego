@@ -21,8 +21,8 @@ var links []string
 
 // Command line args
 var (
-	searchFor  = kingpin.Flag("search", "Strings to search").Short('s').Default("pass").String()
-	outputTo   = kingpin.Flag("output", "Folder to save the pastes").Short('o').Default("results").String()
+	searchFor  = kingpin.Flag("search", "Strings to search, i.e: \"password,ssh\"").Short('s').Default("pass").String()
+	outputTo   = kingpin.Flag("output", "Folder to save the bins").Short('o').Default("results").String()
 	caseInsens = kingpin.Flag("insensitive", "Search for case-insensitive strings").Default("false").Short('i').Bool()
 )
 

@@ -8,6 +8,17 @@ Search keywords are case sensitive
 
 `pastego -s "password,keygen,PASSWORD"`
 
+
+```
+usage: pastego [<flags>]
+
+Flags:
+      --help              Show context-sensitive help (also try --help-long and --help-man).
+  -s, --search="pass"     Strings to search, i.e: "password,ssh"
+  -o, --output="results"  Folder to save the bins
+  -i, --insensitive       Search for case-insensitive strings
+```
+
 ## Requirements
 
 `go get -u "github.com/PuerkitoBio/goquery"`
