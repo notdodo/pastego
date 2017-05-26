@@ -30,3 +30,8 @@ Flags:
 You need a PRO account to use this: pastebin will **block/blacklist** your IP.
 
 [pastebin PRO](https://pastebin.com/pro)
+
+##### Or....
+
+- increase the time between each request
+- create a script to restart your router when pastebin warns you
