@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -89,8 +90,9 @@ func getBins(bins int) []pasteJSON {
 	if err = json.NewDecoder(strings.NewReader(string(b))).Decode(&out); err != nil {
 		if strings.Contains(string(b), slowDown) || string(b) == "" {
 			fmt.Printf("Slow down!\n\n")
-			time.Sleep(10 * time.Second)
+			time.Sleep(15 * time.Second)
 		} else {
+			fmt.Printf("%s\n", string(b))
 			log.Fatal(err)
 		}
 	}
@@ -98,15 +100,22 @@ func getBins(bins int) []pasteJSON {
 }
 
 func saveToFile(link *pasteJSON, text string, match string) {
-	os.Mkdir(*outputTo, os.FileMode(0775))
-	var title string = fmt.Sprintf("%s/%s - ", *outputTo, match)
+	// ./outputDir
+	var outputDir string = filepath.Clean(*outputTo)
+	if err := os.MkdirAll(outputDir, os.FileMode(0775)); err != nil {
+		log.Fatal(err)
+	}
+	// match - pasteTitle
+	var title string = fmt.Sprintf("%s__", match)
 	if link.Title == "" {
 		title += link.Key
 	} else {
 		title += link.Title
 	}
+	// ./outputDir/match - pasteTitle
+	var filePath string = outputDir + string(filepath.Separator) + filepath.Clean(title)
 	if _, err := os.Stat(title); os.IsNotExist(err) {
-		if err := ioutil.WriteFile(title, []byte(text), 0644); err != nil {
+		if err := ioutil.WriteFile(filePath, []byte(text), 0644); err != nil {
 			log.Fatal(err)
 		}
 	}
@@ -127,5 +136,6 @@ func run(interval int, bins int) {
 
 func main() {
 	kingpin.Parse()
-	run(120, 250)
+	// Without a PRO account try to increase the first args and decremente the second
+	run(150, 250)
 }
