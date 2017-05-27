@@ -41,7 +41,7 @@ type pasteJSON struct {
 func contains(link string, cleaners []string) (bool, string) {
 	for _, clr := range cleaners {
 		if *caseInsens {
-			if strings.EqualFold(link, clr) {
+			if strings.Contains(strings.ToUpper(link), strings.ToUpper(clr)) {
 				return true, clr
 			}
 		} else {
@@ -57,7 +57,6 @@ func contains(link string, cleaners []string) (bool, string) {
 func pasteSearcher(link *pasteJSON) {
 	doc, err := goquery.NewDocument(link.ScrapeURL)
 	if err != nil {
-		fmt.Printf("searcher\n\n")
 		log.Fatal(err)
 	}
 	doc.Find("body").Each(func(index int, item *goquery.Selection) {
@@ -77,7 +76,6 @@ func getBins(bins int) []pasteJSON {
 
 	r, err := client.Get(url)
 	if err != nil {
-		fmt.Printf("get\n\n")
 		log.Fatal(err)
 	}
 	if r != nil {
@@ -93,7 +91,6 @@ func getBins(bins int) []pasteJSON {
 			fmt.Printf("Slow down!\n\n")
 			time.Sleep(10 * time.Second)
 		} else {
-			fmt.Printf("jsondecoder\n\n")
 			log.Fatal(err)
 		}
 	}
@@ -110,7 +107,6 @@ func saveToFile(link *pasteJSON, text string, match string) {
 	}
 	if _, err := os.Stat(title); os.IsNotExist(err) {
 		if err := ioutil.WriteFile(title, []byte(text), 0644); err != nil {
-			fmt.Printf("writefile!\n\n")
 			log.Fatal(err)
 		}
 	}
