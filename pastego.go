@@ -62,8 +62,9 @@ func pasteSearcher(link *pasteJSON) {
 	}
 	doc.Find("body").Each(func(index int, item *goquery.Selection) {
 		if res, match := contains(item.Text(), strings.Split(*searchFor, ",")); res {
-			fmt.Printf("%s - %s\n", match, link.FullURL)
-			saveToFile(link, item.Text(), match)
+			if saveToFile(link, item.Text(), match) {
+				fmt.Printf("%s - %s\n", match, link.FullURL)
+			}
 		}
 	})
 }
@@ -99,7 +100,7 @@ func getBins(bins int) []pasteJSON {
 	return out
 }
 
-func saveToFile(link *pasteJSON, text string, match string) {
+func saveToFile(link *pasteJSON, text string, match string) bool {
 	// ./outputDir
 	var outputDir string = filepath.Clean(*outputTo)
 	if err := os.MkdirAll(outputDir, os.FileMode(0775)); err != nil {
@@ -118,7 +119,9 @@ func saveToFile(link *pasteJSON, text string, match string) {
 		if err := ioutil.WriteFile(filePath, []byte(text), 0644); err != nil {
 			log.Fatal(err)
 		}
+		return true
 	}
+	return false
 }
 
 func run(interval int, bins int) {
