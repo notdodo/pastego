@@ -115,7 +115,7 @@ func saveToFile(link *pasteJSON, text string, match string) bool {
 	}
 	// ./outputDir/match - pasteTitle
 	var filePath string = outputDir + string(filepath.Separator) + filepath.Clean(title)
-	if _, err := os.Stat(title); os.IsNotExist(err) {
+	if _, err := os.Stat(filePath); os.IsNotExist(err) {
 		if err := ioutil.WriteFile(filePath, []byte(text), 0644); err != nil {
 			log.Fatal(err)
 		}
