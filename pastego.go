@@ -113,6 +113,7 @@ func saveToFile(link *pasteJSON, text string, match string) bool {
 	} else {
 		title += link.Title
 	}
+	title = strings.Replace(title, "/", "_", -1)
 	// ./outputDir/match - pasteTitle
 	var filePath string = outputDir + string(filepath.Separator) + filepath.Clean(title)
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
