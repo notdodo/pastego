@@ -2,8 +2,10 @@ package main
 
 import (
 	// import standard libraries
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/edoz90/pastego/pegmatch"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -14,6 +16,7 @@ import (
 
 	// import third party libraries
 	"github.com/PuerkitoBio/goquery"
+	"github.com/asaskevich/govalidator"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
 
@@ -22,7 +25,7 @@ var links []string
 
 // Command line args
 var (
-	searchFor  = kingpin.Flag("search", "Strings to search, i.e: \"password,ssh\"").Short('s').Default("pass").String()
+	searchFor  = kingpin.Flag("search", "Strings to search with optional bool operator(&&, ||, ~), i.e: \"password,some || (thing && ~maybenot), \"").Short('s').Default("pass").String()
 	outputTo   = kingpin.Flag("output", "Folder to save the bins").Short('o').Default("results").String()
 	caseInsens = kingpin.Flag("insensitive", "Search for case-insensitive strings").Default("false").Short('i').Bool()
 )
@@ -39,17 +42,21 @@ type pasteJSON struct {
 	User      string `json:"user"`
 }
 
-func contains(link string, cleaners []string) (bool, string) {
-	for _, clr := range cleaners {
+func contains(link string, matches []string) (bool, string) {
+	if *caseInsens {
+		link = strings.ToUpper(link)
+	}
+	pegmatch.PasteContentString = link
+	for _, mtch := range matches {
+		var got interface{}
+		var err error
 		if *caseInsens {
-			if strings.Contains(strings.ToUpper(link), strings.ToUpper(clr)) {
-				return true, clr
-			}
+			got, err = pegmatch.ParseReader("", bytes.NewBufferString(strings.ToUpper(mtch)))
 		} else {
-			if strings.Contains(link, clr) {
-				return true, clr
-			}
-
+			got, err = pegmatch.ParseReader("", bytes.NewBufferString(mtch))
+		}
+		if err == nil && got.(bool) {
+			return true, strings.Split(mtch, " ")[0]
 		}
 	}
 	return false, ""
@@ -107,15 +114,15 @@ func saveToFile(link *pasteJSON, text string, match string) bool {
 		log.Fatal(err)
 	}
 	// match - pasteTitle
-	var title string = fmt.Sprintf("%s__", match)
+	var title string
 	if link.Title == "" {
 		title += link.Key
 	} else {
 		title += link.Title
 	}
-	title = strings.Replace(title, "/", "_", -1)
+	title = fmt.Sprintf("%s__", match) + govalidator.SafeFileName(strings.Replace(title, "/", "_", -1))
 	// ./outputDir/match - pasteTitle
-	var filePath string = outputDir + string(filepath.Separator) + filepath.Clean(title)
+	var filePath string = outputDir + string(filepath.Separator) + title
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
 		if err := ioutil.WriteFile(filePath, []byte(text), 0644); err != nil {
 			log.Fatal(err)
@@ -140,6 +147,6 @@ func run(interval int, bins int) {
 
 func main() {
 	kingpin.Parse()
-	// Without a PRO account try to increase the first args and decremente the second
+	// Without a PRO account try to increase the first args and decrease the second
 	run(150, 250)
 }

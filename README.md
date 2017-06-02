@@ -1,6 +1,10 @@
 # pastego
 
-Scrape pastebin with API using GO
+Scrape pastebin API using GO.
+
+## Installation
+
+go get -u github.com/edoz90/pastego
 
 ## Usage
 
@@ -8,6 +12,9 @@ Search keywords are case sensitive
 
 `pastego -s "password,keygen,PASSWORD"`
 
+You can use boolean operators to reduce false positive
+
+`pastego -s "quake && ~earthquake, password && ~(php || sudo || Linux)"`
 
 ```
 usage: pastego [<flags>]
@@ -25,6 +32,10 @@ Flags:
 
 `go get -u "gopkg.in/alecthomas/kingpin.v2"`
 
+To create the code from PEG use pigeon:
+
+`go get -u github.com/mna/pigeon`
+
 ## Disclaimer
 
 You need a PRO account to use this: pastebin will **block/blacklist** your IP.
@@ -38,4 +49,4 @@ You need a PRO account to use this: pastebin will **block/blacklist** your IP.
 
 ## Dev
 
-    Add support for 'logical' search: i.e: "password && !log"
+    - [x] Add support for 'logical' search: i.e: "password && !log"
