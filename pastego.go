@@ -48,6 +48,7 @@ func contains(link string, matches []string) (bool, string) {
 	}
 	pegmatch.PasteContentString = link
 	for _, mtch := range matches {
+		mtch = strings.TrimSpace(mtch)
 		var got interface{}
 		var err error
 		if *caseInsens {
