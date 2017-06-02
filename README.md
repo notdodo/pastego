@@ -4,7 +4,7 @@ Scrape pastebin API using GO.
 
 ## Installation
 
-go get -u github.com/edoz90/pastego
+`$ go get -u github.com/edoz90/pastego`
 
 ## Usage
 
@@ -42,11 +42,7 @@ You need a PRO account to use this: pastebin will **block/blacklist** your IP.
 
 [pastebin PRO](https://pastebin.com/pro)
 
-##### Or....
+#### Or....
 
 - increase the time between each request
 - create a script to restart your router when pastebin warns you
-
-## Dev
-
-    - [x] Add support for 'logical' search: i.e: "password && !log"
