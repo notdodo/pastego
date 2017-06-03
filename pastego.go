@@ -43,19 +43,10 @@ type pasteJSON struct {
 }
 
 func contains(link string, matches []string) (bool, string) {
-	if *caseInsens {
-		link = strings.ToUpper(link)
-	}
 	pegmatch.PasteContentString = link
 	for _, mtch := range matches {
 		mtch = strings.TrimSpace(mtch)
-		var got interface{}
-		var err error
-		if *caseInsens {
-			got, err = pegmatch.ParseReader("", bytes.NewBufferString(strings.ToUpper(mtch)))
-		} else {
-			got, err = pegmatch.ParseReader("", bytes.NewBufferString(mtch))
-		}
+		got, err := pegmatch.ParseReader("", bytes.NewBufferString(mtch))
 		if err == nil && got.(bool) {
 			return true, strings.Split(mtch, " ")[0]
 		}
@@ -98,7 +89,7 @@ func getBins(bins int) []pasteJSON {
 	// GO strings works with utf-8
 	if err = json.NewDecoder(strings.NewReader(string(b))).Decode(&out); err != nil {
 		if strings.Contains(string(b), slowDown) || string(b) == "" {
-			fmt.Printf("Slow down!\n\n")
+			fmt.Println("Slow down!\n")
 			time.Sleep(15 * time.Second)
 		} else {
 			fmt.Printf("%s\n", string(b))
@@ -138,16 +129,19 @@ func run(interval int, bins int) {
 		pasteSearcher(&v)
 	}
 	for range time.NewTicker(time.Duration(interval) * time.Second).C {
-		fmt.Printf("Restarting...\n")
+		fmt.Println("Restarting...\n")
 		for _, v := range getBins(bins) {
 			pasteSearcher(&v)
 		}
-		fmt.Printf("Done!\n\n")
+		fmt.Println("Done!\n\n")
 	}
 }
 
 func main() {
 	kingpin.Parse()
+	if *caseInsens {
+		pegmatch.IsInsensitive = true
+	}
 	// Without a PRO account try to increase the first args and decrease the second
 	run(150, 250)
 }

@@ -1,7 +1,8 @@
 {
 package pegmatch
 
-var PasteContentString
+var PasteContentString string = ""
+var IsInsensitive bool = false
 
 var ops = map[string]func(bool, bool) bool {
     "&&": func(l, r bool) bool {
@@ -59,8 +60,12 @@ BoolOp <- ( "&&" / "||") {
     return string(c.text), nil
 }
 
-Search <- [A-Za-z0-9]+ {
-    return strings.Contains(PasteContentString, string(c.text)), nil
+Search <- [A-Za-z0-9!@#$%^?/*-+]+ {
+    var match = string(c.text)
+    if (IsInsensitive) {
+        return strings.Contains(strings.ToUpper(PasteContentString), strings.ToUpper(match)), nil
+    }
+    return strings.Contains(PasteContentString, match), nil
 } / NotOp _ search:Search {
     return !eval(search, nil) , nil
 }
