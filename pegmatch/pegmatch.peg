@@ -2,7 +2,6 @@
 package pegmatch
 
 var PasteContentString string = ""
-var IsInsensitive bool = false
 
 var ops = map[string]func(bool, bool) bool {
     "&&": func(l, r bool) bool {
@@ -36,7 +35,7 @@ func eval(first, rest interface{}) bool {
 
 /*
  * Terminal words returns a bool, expression are evaluated as bool:
- * if the expression match the logic with the word to search returns true
+ * if the expression match the logic with the word to search, returns true
  */
 
 Input <- expr:Expr EOF {
@@ -61,11 +60,7 @@ BoolOp <- ( "&&" / "||") {
 }
 
 Search <- [A-Za-z0-9!@#$%^?/*-+]+ {
-    var match = string(c.text)
-    if (IsInsensitive) {
-        return strings.Contains(strings.ToUpper(PasteContentString), strings.ToUpper(match)), nil
-    }
-    return strings.Contains(PasteContentString, match), nil
+    return strings.Contains(PasteContentString, string(c.text)), nil
 } / NotOp _ search:Search {
     return !eval(search, nil) , nil
 }

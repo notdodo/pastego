@@ -43,12 +43,20 @@ type pasteJSON struct {
 }
 
 func contains(link string, matches []string) (bool, string) {
+	var origMtch = make([]string, len(matches))
+	copy(origMtch, matches)
+	if *caseInsens {
+		link = strings.ToUpper(link)
+		for i, v := range matches {
+			matches[i] = strings.ToUpper(v)
+		}
+	}
 	pegmatch.PasteContentString = link
-	for _, mtch := range matches {
+	for i, mtch := range matches {
 		mtch = strings.TrimSpace(mtch)
 		got, err := pegmatch.ParseReader("", bytes.NewBufferString(mtch))
 		if err == nil && got.(bool) {
-			return true, strings.Split(mtch, " ")[0]
+			return true, strings.Split(origMtch[i], " ")[0]
 		}
 	}
 	return false, ""
@@ -139,9 +147,6 @@ func run(interval int, bins int) {
 
 func main() {
 	kingpin.Parse()
-	if *caseInsens {
-		pegmatch.IsInsensitive = true
-	}
 	// Without a PRO account try to increase the first args and decrease the second
 	run(150, 250)
 }
