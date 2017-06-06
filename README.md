@@ -28,11 +28,11 @@ Flags:
 
 Supported expression/operators:
 
-    '&&' - and
-    '||' - or
-    '~' - not
-    '\'string with space\'
-    '(myexpression && 'with operators')'
+    `&&` - and
+    `||` - or
+    `~` - not
+    `\'string with space\`
+    `(myexpression && 'with operators')`
 
 ## Requirements
 
