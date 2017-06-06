@@ -48,6 +48,10 @@ Expr <- _ first:Term rest:( _ BoolOp _ Term )* _ {
 
 Term <- '(' expr:Expr ')' {
     return expr, nil
+} / "'" (Search _?)+ "'" {
+    var sTemp = string(c.text)
+    sTemp = sTemp[1:len(sTemp)-1]
+    return strings.Contains(PasteContentString, sTemp), nil
 } / boolean:Search {
     return boolean, nil 
 } / notop:NotOp? _ expr:Expr {
@@ -59,7 +63,7 @@ BoolOp <- ( "&&" / "||") {
     return string(c.text), nil
 }
 
-Search <- [A-Za-z0-9!@#$%^?/*-+]+ {
+Search <- [A-Za-z0-9!@#$%^?/*-+.><]+ {
     return strings.Contains(PasteContentString, string(c.text)), nil
 } / NotOp _ search:Search {
     return !eval(search, nil) , nil

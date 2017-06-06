@@ -31,15 +31,15 @@ var (
 )
 
 type pasteJSON struct {
-	ScrapeURL string `json:"scrape_url"`
-	FullURL   string `json:"full_url"`
-	Date      string `json:"date"`
-	Key       string `json:"key"`
-	Size      string `json:"size"`
-	Expire    string `json:"expire"`
-	Title     string `json:"title"`
-	Syntax    string `json:"syntax"`
-	User      string `json:"user"`
+	ScrapeURL string `json:"scrape_url,-"`
+	FullURL   string `json:"full_url,-"`
+	Date      string `json:"date,-"`
+	Key       string `json:"key,-"`
+	Size      string `json:"size,-"`
+	Expire    string `json:"expire,-"`
+	Title     string `json:"title,-"`
+	Syntax    string `json:"syntax,-"`
+	User      string `json:"user,-"`
 }
 
 func contains(link string, matches []string) (bool, string) {
@@ -98,7 +98,7 @@ func getBins(bins int) []pasteJSON {
 	if err = json.NewDecoder(strings.NewReader(string(b))).Decode(&out); err != nil {
 		if strings.Contains(string(b), slowDown) || string(b) == "" {
 			fmt.Println("Slow down!\n")
-			time.Sleep(15 * time.Second)
+			time.Sleep(5 * time.Second)
 		} else {
 			fmt.Printf("%s\n", string(b))
 			log.Fatal(err)
@@ -133,15 +133,21 @@ func saveToFile(link *pasteJSON, text string, match string) bool {
 }
 
 func run(interval int, bins int) {
-	for _, v := range getBins(bins) {
-		pasteSearcher(&v)
-	}
-	for range time.NewTicker(time.Duration(interval) * time.Second).C {
-		fmt.Println("Restarting...\n")
+	parseBins := func() {
 		for _, v := range getBins(bins) {
 			pasteSearcher(&v)
 		}
-		fmt.Println("Done!\n\n")
+	}
+
+	// First run
+	parseBins()
+	fmt.Println("Done!\n")
+
+	// Run every 'interval' seconds
+	for range time.NewTicker(time.Duration(interval) * time.Second).C {
+		fmt.Println("Restarting...")
+		parseBins()
+		fmt.Println("Done!\n")
 	}
 }
 
