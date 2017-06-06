@@ -26,6 +26,14 @@ Flags:
   -i, --insensitive       Search for case-insensitive strings
 ```
 
+Supported expression/operators:
+
+    '&&' - and
+    '||' - or
+    '~' - not
+    '\'string with space\'
+    '(myexpression && 'with operators')'
+
 ## Requirements
 
 `go get -u "github.com/PuerkitoBio/goquery"`
