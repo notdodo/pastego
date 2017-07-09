@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/edoz90/pastego/gui"
 	"github.com/edoz90/pastego/pegmatch"
 	"io/ioutil"
 	"log"
@@ -19,9 +20,6 @@ import (
 	"github.com/asaskevich/govalidator"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
-
-var paste string = "https://pastebin.com"
-var links []string
 
 // Command line args
 var (
@@ -65,27 +63,29 @@ func contains(link string, matches []string) (bool, string) {
 func pasteSearcher(link *pasteJSON) {
 	doc, err := goquery.NewDocument(link.ScrapeURL)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalln(err)
 	}
 	doc.Find("body").Each(func(index int, item *goquery.Selection) {
 		if res, match := contains(item.Text(), strings.Split(*searchFor, ",")); res {
 			if saveToFile(link, item.Text(), match) {
-				fmt.Printf("%s - %s\n", match, link.FullURL)
+				s := fmt.Sprintf("%s - %s", match, link.FullURL)
+				gui.PrintTo("log", s)
+				gui.ListDir()
 			}
 		}
 	})
 }
 
 func getBins(bins int) []pasteJSON {
-	var url string = "https://pastebin.com/api_scraping.php?limit=" + fmt.Sprint(bins)
-	var slowDown string = "Please slow down"
-	var trans = &http.Transport{DisableKeepAlives: false}
-	var client = &http.Client{Timeout: 5 * time.Second, Transport: trans}
+	url := "https://pastebin.com/api_scraping.php?limit=" + fmt.Sprint(bins)
+	slowDown := "Please slow down"
+	trans := &http.Transport{DisableKeepAlives: false}
+	client := &http.Client{Timeout: 60 * time.Second, Transport: trans}
 	var out []pasteJSON
 
 	r, err := client.Get(url)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalln(err)
 	}
 	if r != nil {
 		defer r.Body.Close()
@@ -97,11 +97,11 @@ func getBins(bins int) []pasteJSON {
 	// GO strings works with utf-8
 	if err = json.NewDecoder(strings.NewReader(string(b))).Decode(&out); err != nil {
 		if strings.Contains(string(b), slowDown) || string(b) == "" {
-			fmt.Println("Slow down!\n")
-			time.Sleep(5 * time.Second)
+			gui.PrintTo("log", "Slow down!\n")
 		} else {
-			fmt.Printf("%s\n", string(b))
-			log.Fatal(err)
+			s := fmt.Sprintf("%s\n", string(b))
+			gui.PrintTo("log", s)
+			log.Fatalln(err)
 		}
 	}
 	return out
@@ -109,9 +109,9 @@ func getBins(bins int) []pasteJSON {
 
 func saveToFile(link *pasteJSON, text string, match string) bool {
 	// ./outputDir
-	var outputDir string = filepath.Clean(*outputTo)
+	outputDir, _ := filepath.Abs(filepath.Clean(*outputTo))
 	if err := os.MkdirAll(outputDir, os.FileMode(0775)); err != nil {
-		log.Fatal(err)
+		log.Fatalln(err)
 	}
 	// match - pasteTitle
 	var title string
@@ -122,10 +122,10 @@ func saveToFile(link *pasteJSON, text string, match string) bool {
 	}
 	title = fmt.Sprintf("%s__", match) + govalidator.SafeFileName(strings.Replace(title, "/", "_", -1))
 	// ./outputDir/match - pasteTitle
-	var filePath string = outputDir + string(filepath.Separator) + title
+	filePath := outputDir + string(filepath.Separator) + title
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
 		if err := ioutil.WriteFile(filePath, []byte(text), 0644); err != nil {
-			log.Fatal(err)
+			log.Fatalln(err)
 		}
 		return true
 	}
@@ -141,18 +141,19 @@ func run(interval int, bins int) {
 
 	// First run
 	parseBins()
-	fmt.Println("Done!\n")
+	gui.PrintTo("log", "Done!\n")
 
 	// Run every 'interval' seconds
 	for range time.NewTicker(time.Duration(interval) * time.Second).C {
-		fmt.Println("Restarting...")
+		gui.PrintTo("log", "Restarting...")
 		parseBins()
-		fmt.Println("Done!\n")
+		gui.PrintTo("log", "Done!\n")
 	}
 }
 
 func main() {
 	kingpin.Parse()
 	// Without a PRO account try to increase the first args and decrease the second
-	run(150, 250)
+	go run(150, 250)
+	gui.SetGui(*outputTo)
 }
