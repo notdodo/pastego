@@ -40,6 +40,8 @@ type pasteJSON struct {
 	User      string `json:"user,-"`
 }
 
+var logFile string = ""
+
 func contains(link string, matches []string) (bool, string) {
 	var origMtch = make([]string, len(matches))
 	copy(origMtch, matches)
@@ -69,7 +71,9 @@ func pasteSearcher(link *pasteJSON) {
 		if res, match := contains(item.Text(), strings.Split(*searchFor, ",")); res {
 			if saveToFile(link, item.Text(), match) {
 				s := fmt.Sprintf("%s - %s", match, link.FullURL)
+				// Show recent pastes
 				gui.PrintTo("log", s)
+				logToFile(s)
 				gui.ListDir()
 			}
 		}
@@ -85,7 +89,8 @@ func getBins(bins int) []pasteJSON {
 
 	r, err := client.Get(url)
 	if err != nil {
-		log.Fatalln(err)
+		logToFile(err.Error())
+		return out
 	}
 	if r != nil {
 		defer r.Body.Close()
@@ -97,20 +102,42 @@ func getBins(bins int) []pasteJSON {
 	// GO strings works with utf-8
 	if err = json.NewDecoder(strings.NewReader(string(b))).Decode(&out); err != nil {
 		if strings.Contains(string(b), slowDown) || string(b) == "" {
-			gui.PrintTo("log", "Slow down!\n")
+			logToFile("Slow down!\n")
 		} else {
+			// Error on marshalling JSON
 			s := fmt.Sprintf("%s\n", string(b))
-			gui.PrintTo("log", s)
-			log.Fatalln(err)
+			logToFile(s)
 		}
 	}
 	return out
+}
+
+func logToFile(s string) {
+	var err error
+	var tmpfile *os.File
+	if logFile != "" {
+		tmpfile, err = os.OpenFile(logFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	} else {
+		tmpfile, err = ioutil.TempFile("", "pastego")
+		logFile = tmpfile.Name()
+	}
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	if _, err := tmpfile.Write([]byte(s + "\r\n")); err != nil {
+		log.Fatalln(err)
+	}
+
+	defer tmpfile.Close()
 }
 
 func saveToFile(link *pasteJSON, text string, match string) bool {
 	// ./outputDir
 	outputDir, _ := filepath.Abs(filepath.Clean(*outputTo))
 	if err := os.MkdirAll(outputDir, os.FileMode(0775)); err != nil {
+		// Error on creating/reading the output folder
+		logToFile(err.Error())
 		log.Fatalln(err)
 	}
 	// match - pasteTitle
@@ -125,6 +152,8 @@ func saveToFile(link *pasteJSON, text string, match string) bool {
 	filePath := outputDir + string(filepath.Separator) + title
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
 		if err := ioutil.WriteFile(filePath, []byte(text), 0644); err != nil {
+			// Error on writing file, something went wrong
+			logToFile(err.Error())
 			log.Fatalln(err)
 		}
 		return true
@@ -141,18 +170,28 @@ func run(interval int, bins int) {
 
 	// First run
 	parseBins()
-	gui.PrintTo("log", "Done!\n")
+	logToFile("Done!\n")
 
 	// Run every 'interval' seconds
 	for range time.NewTicker(time.Duration(interval) * time.Second).C {
-		gui.PrintTo("log", "Restarting...")
+		logToFile("Restarting...")
 		parseBins()
-		gui.PrintTo("log", "Done!\n")
+		logToFile("Done!\n")
 	}
 }
 
 func main() {
 	kingpin.Parse()
+	logToFile(`
+
+		██████╗  █████╗ ███████╗████████╗███████╗ ██████╗  ██████╗ 
+		██╔══██╗██╔══██╗██╔════╝╚══██╔══╝██╔════╝██╔════╝ ██╔═══██╗
+		██████╔╝███████║███████╗   ██║   █████╗  ██║  ███╗██║   ██║
+		██╔═══╝ ██╔══██║╚════██║   ██║   ██╔══╝  ██║   ██║██║   ██║
+		██║     ██║  ██║███████║   ██║   ███████╗╚██████╔╝╚██████╔╝
+		╚═╝     ╚═╝  ╚═╝╚══════╝   ╚═╝   ╚══════╝ ╚═════╝  ╚═════╝ 	
+	`)
+
 	// Without a PRO account try to increase the first args and decrease the second
 	go run(150, 250)
 	gui.SetGui(*outputTo)
