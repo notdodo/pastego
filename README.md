@@ -1,6 +1,17 @@
 # pastego
 
-Scrape pastebin API using GO.
+Scrape pastebin using GO and expression grammar.
+
+```
+██████╗  █████╗ ███████╗████████╗███████╗ ██████╗  ██████╗ 
+██╔══██╗██╔══██╗██╔════╝╚══██╔══╝██╔════╝██╔════╝ ██╔═══██╗
+██████╔╝███████║███████╗   ██║   █████╗  ██║  ███╗██║   ██║
+██╔═══╝ ██╔══██║╚════██║   ██║   ██╔══╝  ██║   ██║██║   ██║
+██║     ██║  ██║███████║   ██║   ███████╗╚██████╔╝╚██████╔╝
+╚═╝     ╚═╝  ╚═╝╚══════╝   ╚═╝   ╚══════╝ ╚═════╝  ╚═════╝ 	
+```
+![pastego.png](https://raw.githubusercontent.com/edoz90/pastego/support/pastego.png)
+
 
 ## Installation
 
@@ -14,7 +25,7 @@ Search keywords are case sensitive
 
 You can use boolean operators to reduce false positive
 
-`pastego -s "quake && ~earthquake, password && ~(php || sudo || Linux)"`
+`pastego -s "quake && ~earthquake, password && ~(php || sudo || Linux || '<body>')"`
 
 ```
 usage: pastego [<flags>]
@@ -40,6 +51,8 @@ Supported expression/operators:
 
 `go get -u "gopkg.in/alecthomas/kingpin.v2"`
 
+`go get -u "github.com/jroimartin/gocui"`
+
 To create the code from PEG use pigeon:
 
 `go get -u github.com/mna/pigeon`
@@ -54,7 +67,3 @@ You need a PRO account to use this: pastebin will **block/blacklist** your IP.
 
 - increase the time between each request
 - create a script to restart your router when pastebin warns you
-
-## In progress
-
-ncurses view to interact with findings
