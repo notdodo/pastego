@@ -90,23 +90,22 @@ func getBins(bins int) []pasteJSON {
 	r, err := client.Get(url)
 	if err != nil {
 		logToFile(err.Error())
-		return out
 	}
 	if r != nil {
 		defer r.Body.Close()
-	}
-	// read []byte{}
-	b, _ := ioutil.ReadAll(r.Body)
+		// read []byte{}
+		b, _ := ioutil.ReadAll(r.Body)
 
-	// Due to some presence of unicode chars convert raw JSON to string than parse it
-	// GO strings works with utf-8
-	if err = json.NewDecoder(strings.NewReader(string(b))).Decode(&out); err != nil {
-		if strings.Contains(string(b), slowDown) || string(b) == "" {
-			logToFile("Slow down!\n")
-		} else {
-			// Error on marshalling JSON
-			s := fmt.Sprintf("%s\n", string(b))
-			logToFile(s)
+		// Due to some presence of unicode chars convert raw JSON to string than parse it
+		// GO strings works with utf-8
+		if err = json.NewDecoder(strings.NewReader(string(b))).Decode(&out); err != nil {
+			if strings.Contains(string(b), slowDown) || string(b) == "" {
+				logToFile("Slow down!\n")
+			} else {
+				// Error on marshalling JSON
+				s := fmt.Sprintf("%s\n", string(b))
+				logToFile(s)
+			}
 		}
 	}
 	return out
