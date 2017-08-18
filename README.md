@@ -31,11 +31,31 @@ Flags:
 
 Supported expression/operators:
 
-    && - and
-    || - or
-    ~ - not
-    'string with space'
-    (myexpression && 'with operators')
+    `&&` - and
+
+    `||` - or
+
+    `~` - not
+
+    `'string with space'`
+
+    `(myexpression && 'with operators')`
+
+### Keybindings
+
+    `q`, `ctrl+c`: quit `pastego`
+
+    `k`, `↑`: show previous bin
+
+    `j`, `↓`: show next bin
+
+    `n`: jump forward by 15 bins
+
+    'p': jump backward by 15 bins
+
+    'N': move to the next block of findings (in alphabet order)
+
+    'P': move to the previous block of findings (in alphabet order)
 
 ## Requirements
 
