@@ -13,24 +13,13 @@ import (
 var BaseDir string
 var MainGui *gocui.Gui
 
+// Move the cursor of 'list' view and show the content of the highlighted bin
 func scrollView(g *gocui.Gui, v *gocui.View, dy int) error {
 	if v != nil {
-		cx, cy := v.Cursor()
-		ox, oy := v.Origin()
-		_, sy := v.Size()
-		offset := (sy - 1) / 2
+		_, cy := v.Cursor()
 		l, _ := v.Line(cy + dy)
 		if len(l) > 0 {
-			if cy <= offset || (oy == 0 && dy < 0) {
-				v.SetCursor(cx, cy+dy)
-			} else {
-				l, _ := v.Line(cy + dy + offset)
-				if len(l) > 0 {
-					v.SetOrigin(ox, oy+dy)
-				} else {
-					v.SetCursor(cx, cy+dy)
-				}
-			}
+			moveTo(dy, v)
 		}
 	}
 
@@ -53,10 +42,29 @@ func scrollView(g *gocui.Gui, v *gocui.View, dy int) error {
 	return nil
 }
 
+// Jump forward/backward of a defined offset
+func moveTo(step int, v *gocui.View) {
+	cx, cy := v.Cursor()
+	ox, oy := v.Origin()
+	_, sy := v.Size()
+	offset := (sy - 1) / 2
+	if cy <= offset || (oy == 0 && step < 0) {
+		v.SetCursor(cx, cy+step)
+	} else {
+		l, _ := v.Line(cy + step + offset)
+		if len(l) > 0 {
+			v.SetOrigin(ox, oy+step)
+		} else {
+			v.SetCursor(cx, cy+step)
+		}
+	}
+}
+
 func ListDir() {
 	listDir(MainGui, BaseDir)
 }
 
+//Get the list the of the saved files
 func listDir(g *gocui.Gui, dir string) {
 	v, _ := g.View("list")
 	v.Clear()
@@ -70,6 +78,7 @@ func listDir(g *gocui.Gui, dir string) {
 	scrollView(g, v, 0)
 }
 
+// Set up the layout
 func layout(g *gocui.Gui) error {
 	maxX, maxY := g.Size()
 	if v, err := g.SetView("list", 0, 0, maxX/4-5, maxY-1); err != nil {
@@ -135,6 +144,49 @@ func scrollDown(g *gocui.Gui, v *gocui.View) error {
 	return scrollView(g, v, 1)
 }
 
+// Jump to next block of findings: jump from a letter to another
+func jumpToNext(g *gocui.Gui, direction int) error {
+	var dy int
+	if direction > 0 {
+		dy = 1
+	} else {
+		dy = -1
+	}
+	go g.Execute(func(g *gocui.Gui) error {
+		v, _ := g.View("list")
+		for true {
+			_, cy := v.Cursor()
+			l, _ := v.Line(cy)
+			if len(l) > 0 {
+				startCharBefore := string([]rune(l)[0])
+				l, _ = v.Line(cy + dy)
+				if len(l) > 0 {
+					startCharAfter := string([]rune(l)[0])
+					if startCharBefore != startCharAfter {
+						scrollView(g, v, dy)
+						break
+					}
+					moveTo(dy, v)
+				} else {
+					break
+				}
+			} else {
+				break
+			}
+		}
+		return nil
+	})
+	return nil
+}
+
+func jumpToNextDown(g *gocui.Gui, v *gocui.View) error {
+	return jumpToNext(g, 1)
+}
+
+func jumpToNextUp(g *gocui.Gui, v *gocui.View) error {
+	return jumpToNext(g, -1)
+}
+
 func initKeybindings(g *gocui.Gui) error {
 	if err := g.SetKeybinding("", gocui.KeyCtrlC, gocui.ModNone, quit); err != nil {
 		return err
@@ -152,6 +204,22 @@ func initKeybindings(g *gocui.Gui) error {
 		return err
 	}
 	if err := g.SetKeybinding("list", 'j', gocui.ModNone, scrollDown); err != nil {
+		return err
+	}
+	if err := g.SetKeybinding("list", 'n', gocui.ModNone, func(g *gocui.Gui, v *gocui.View) error {
+		return scrollView(g, v, 15)
+	}); err != nil {
+		return err
+	}
+	if err := g.SetKeybinding("list", 'N', gocui.ModNone, jumpToNextDown); err != nil {
+		return err
+	}
+	if err := g.SetKeybinding("list", 'p', gocui.ModNone, func(g *gocui.Gui, v *gocui.View) error {
+		return scrollView(g, v, -15)
+	}); err != nil {
+		return err
+	}
+	if err := g.SetKeybinding("list", 'P', gocui.ModNone, jumpToNextUp); err != nil {
 		return err
 	}
 	if err := g.SetKeybinding("list", gocui.KeyHome, gocui.ModNone, func(g *gocui.Gui, v *gocui.View) error {

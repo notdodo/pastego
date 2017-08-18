@@ -5,8 +5,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/edoz90/pastego/gui"
-	"github.com/edoz90/pastego/pegmatch"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -14,6 +12,9 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/edoz90/pastego/gui"
+	"github.com/edoz90/pastego/pegmatch"
 
 	// import third party libraries
 	"github.com/PuerkitoBio/goquery"
@@ -42,6 +43,7 @@ type pasteJSON struct {
 
 var logFile string = ""
 
+// Using PEG check if the bin contains the searched word/s
 func contains(link string, matches []string) (bool, string) {
 	var origMtch = make([]string, len(matches))
 	copy(origMtch, matches)
@@ -62,6 +64,7 @@ func contains(link string, matches []string) (bool, string) {
 	return false, ""
 }
 
+// Read the bin
 func pasteSearcher(link *pasteJSON) {
 	doc, err := goquery.NewDocument(link.ScrapeURL)
 	if err != nil {
@@ -80,6 +83,7 @@ func pasteSearcher(link *pasteJSON) {
 	})
 }
 
+// Get a list of 'bins' bin
 func getBins(bins int) []pasteJSON {
 	url := "https://pastebin.com/api_scraping.php?limit=" + fmt.Sprint(bins)
 	slowDown := "Please slow down"
