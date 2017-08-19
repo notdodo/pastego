@@ -43,19 +43,21 @@ Supported expression/operators:
 
 ### Keybindings
 
-    `q`, `ctrl+c`: quit `pastego`
+`q`, `ctrl+c`: quit `pastego`
 
-    `k`, `↑`: show previous bin
+`k`, `↑`: show previous bin
 
-    `j`, `↓`: show next bin
+`j`, `↓`: show next bin
 
-    `n`: jump forward by 15 bins
+`n`: jump forward by 15 bins
 
-    'p': jump backward by 15 bins
+`p`: jump backward by 15 bins
 
-    'N': move to the next block of findings (in alphabet order)
+`N`: move to the next block of findings (in alphabet order)
 
-    'P': move to the previous block of findings (in alphabet order)
+`P`: move to the previous block of findings (in alphabet order)
+
+`d`: delete file from file system
 
 ## Requirements
 
