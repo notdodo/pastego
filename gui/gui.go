@@ -24,7 +24,7 @@ func scrollView(g *gocui.Gui, v *gocui.View, dy int) error {
 	}
 
 	// Print the content of the file
-	go g.Execute(func(g *gocui.Gui) error {
+	go g.Update(func(g *gocui.Gui) error {
 		vc, _ := g.View("content")
 		vc.Clear()
 		vl, _ := g.View("list")
@@ -76,7 +76,7 @@ func listDir(g *gocui.Gui, dir string) {
 	v.Clear()
 	dir, _ = filepath.Abs(filepath.Clean(dir))
 	files, _ := ioutil.ReadDir(dir)
-	go g.Execute(func(g *gocui.Gui) error {
+	go g.Update(func(g *gocui.Gui) error {
 		for _, f := range files {
 			if !f.IsDir() {
 				fmt.Fprintln(v, f.Name())
@@ -162,7 +162,7 @@ func jumpToNext(g *gocui.Gui, direction int) error {
 		dy = -1
 	}
 	v, _ := g.View("list")
-	go g.Execute(func(g *gocui.Gui) error {
+	go g.Update(func(g *gocui.Gui) error {
 		for {
 			_, cy := v.Cursor()
 			l0, _ := v.Line(cy)
