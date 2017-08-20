@@ -51,8 +51,14 @@ func moveTo(step int, v *gocui.View) {
 	if cy <= offset || (oy == 0 && step < 0) {
 		v.SetCursor(cx, cy+step)
 	} else {
-		l, _ := v.Line(cy + step + offset)
-		if len(l) > 0 {
+		var l string
+		var e error
+		if step > 0 {
+			l, e = v.Line(sy)
+		} else {
+			l, e = v.Line(cy + step + offset)
+		}
+		if e == nil && len(l) > 0 {
 			v.SetOrigin(ox, oy+step)
 		} else {
 			v.SetCursor(cx, cy+step)
@@ -154,22 +160,18 @@ func jumpToNext(g *gocui.Gui, direction int) error {
 	}
 	go g.Execute(func(g *gocui.Gui) error {
 		v, _ := g.View("list")
-		for true {
+		for {
 			_, cy := v.Cursor()
-			l, _ := v.Line(cy)
-			if len(l) > 0 {
-				startCharBefore := string([]rune(l)[0])
-				l, _ = v.Line(cy + dy)
-				if len(l) > 0 {
-					startCharAfter := string([]rune(l)[0])
-					if startCharBefore != startCharAfter {
-						scrollView(g, v, dy)
-						break
-					}
-					moveTo(dy, v)
-				} else {
+			l0, _ := v.Line(cy)
+			l1, _ := v.Line(cy + dy)
+			if len(l0) > 0 && len(l1) > 0 {
+				startCharBefore := string([]rune(l0)[0])
+				startCharAfter := string([]rune(l1)[0])
+				if startCharBefore != startCharAfter {
+					scrollView(g, v, dy)
 					break
 				}
+				moveTo(dy, v)
 			} else {
 				break
 			}
