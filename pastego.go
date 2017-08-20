@@ -73,7 +73,12 @@ func pasteSearcher(link *pasteJSON) {
 	doc.Find("body").Each(func(index int, item *goquery.Selection) {
 		if res, match := contains(item.Text(), strings.Split(*searchFor, ",")); res {
 			if saveToFile(link, item.Text(), match) {
-				s := fmt.Sprintf("%s - %s", match, link.FullURL)
+				var s string
+				if link.Title != "" {
+					s = fmt.Sprintf("%s - %s - %s", match, link.FullURL, link.Title)
+				} else {
+					s = fmt.Sprintf("%s - %s", match, link.FullURL)
+				}
 				// Show recent pastes
 				gui.PrintTo("log", s)
 				logToFile(s)
