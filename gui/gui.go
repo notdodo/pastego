@@ -76,11 +76,14 @@ func listDir(g *gocui.Gui, dir string) {
 	v.Clear()
 	dir, _ = filepath.Abs(filepath.Clean(dir))
 	files, _ := ioutil.ReadDir(dir)
-	for _, f := range files {
-		if !f.IsDir() {
-			fmt.Fprintln(v, f.Name())
+	go g.Execute(func(g *gocui.Gui) error {
+		for _, f := range files {
+			if !f.IsDir() {
+				fmt.Fprintln(v, f.Name())
+			}
 		}
-	}
+		return nil
+	})
 	scrollView(g, v, 0)
 }
 
@@ -158,8 +161,8 @@ func jumpToNext(g *gocui.Gui, direction int) error {
 	} else {
 		dy = -1
 	}
+	v, _ := g.View("list")
 	go g.Execute(func(g *gocui.Gui) error {
-		v, _ := g.View("list")
 		for {
 			_, cy := v.Cursor()
 			l0, _ := v.Line(cy)
@@ -243,11 +246,8 @@ func initKeybindings(g *gocui.Gui) error {
 		}
 		listDir(g, BaseDir)
 		_, cy = vl.Cursor()
-		l, _ = vl.Line(cy)
 		if l, _ = vl.Line(cy); len(l) <= 0 {
 			scrollView(g, v, -1)
-		} else {
-			scrollView(g, v, 0)
 		}
 		return nil
 	}); err != nil {
