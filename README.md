@@ -59,6 +59,8 @@ Supported expression/operators:
 
 `d`: delete file from file system
 
+`HOME`: go to top
+
 ## Requirements
 
 `go get -u "github.com/PuerkitoBio/goquery"`
