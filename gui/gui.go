@@ -20,25 +20,25 @@ func scrollView(g *gocui.Gui, v *gocui.View, dy int) error {
 		l, _ := v.Line(cy + dy)
 		if len(l) > 0 {
 			moveTo(dy, v)
+
+			// Update the view
+			g.Update(func(g *gocui.Gui) error {
+				vc, _ := g.View("content")
+				vc.Clear()
+				vl, _ := g.View("list")
+				_, cy := vl.Cursor()
+				l, _ := vl.Line(cy)
+				l = filepath.Clean(BaseDir + string(filepath.Separator) + l)
+				if _, err := os.Stat(l); err == nil {
+					b, err := ioutil.ReadFile(l)
+					if err == nil {
+						PrintTo("content", string(b))
+					}
+				}
+				return nil
+			})
 		}
 	}
-
-	// Print the content of the file
-	go g.Update(func(g *gocui.Gui) error {
-		vc, _ := g.View("content")
-		vc.Clear()
-		vl, _ := g.View("list")
-		_, cy := vl.Cursor()
-		l, _ := vl.Line(cy)
-		l = filepath.Clean(BaseDir + string(filepath.Separator) + l)
-		if _, err := os.Stat(l); err == nil {
-			b, err := ioutil.ReadFile(l)
-			if err == nil {
-				fmt.Fprintln(vc, string(b))
-			}
-		}
-		return nil
-	})
 	return nil
 }
 
@@ -48,14 +48,17 @@ func moveTo(step int, v *gocui.View) {
 	ox, oy := v.Origin()
 	_, sy := v.Size()
 	offset := (sy - 1) / 2
+	// Start list
 	if cy <= offset || (oy == 0 && step < 0) {
 		v.SetCursor(cx, cy+step)
 	} else {
 		var l string
 		var e error
 		if step > 0 {
+			// End list
 			l, e = v.Line(sy)
 		} else {
+			// Middle list
 			l, e = v.Line(cy + step + offset)
 		}
 		if e == nil && len(l) > 0 {
@@ -76,14 +79,11 @@ func listDir(g *gocui.Gui, dir string) {
 	v.Clear()
 	dir, _ = filepath.Abs(filepath.Clean(dir))
 	files, _ := ioutil.ReadDir(dir)
-	go g.Update(func(g *gocui.Gui) error {
-		for _, f := range files {
-			if !f.IsDir() {
-				fmt.Fprintln(v, f.Name())
-			}
+	for _, f := range files {
+		if !f.IsDir() {
+			PrintTo("list", f.Name())
 		}
-		return nil
-	})
+	}
 	scrollView(g, v, 0)
 }
 
@@ -162,25 +162,23 @@ func jumpToNext(g *gocui.Gui, direction int) error {
 		dy = -1
 	}
 	v, _ := g.View("list")
-	go g.Update(func(g *gocui.Gui) error {
-		for {
-			_, cy := v.Cursor()
-			l0, _ := v.Line(cy)
-			l1, _ := v.Line(cy + dy)
-			if len(l0) > 0 && len(l1) > 0 {
-				startCharBefore := string([]rune(l0)[0])
-				startCharAfter := string([]rune(l1)[0])
-				if startCharBefore != startCharAfter {
-					scrollView(g, v, dy)
-					break
-				}
-				moveTo(dy, v)
-			} else {
+	for {
+		_, cy := v.Cursor()
+		l0, _ := v.Line(cy)
+		l1, _ := v.Line(cy + dy)
+		if len(l0) > 0 && len(l1) > 0 {
+			startCharBefore := string([]rune(l0)[0])
+			startCharAfter := string([]rune(l1)[0])
+			if startCharBefore != startCharAfter {
+				scrollView(g, v, dy)
 				break
 			}
+			moveTo(dy, v)
+		} else {
+			scrollView(g, v, 0)
+			break
 		}
-		return nil
-	})
+	}
 	return nil
 }
 
@@ -228,8 +226,11 @@ func initKeybindings(g *gocui.Gui) error {
 		return err
 	}
 	if err := g.SetKeybinding("list", gocui.KeyHome, gocui.ModNone, func(g *gocui.Gui, v *gocui.View) error {
-		v.SetOrigin(0, 0)
-		v.SetCursor(0, 0)
+		g.Update(func(g *gocui.Gui) error {
+			v.SetOrigin(0, 0)
+			v.SetCursor(0, 0)
+			return nil
+		})
 		return nil
 	}); err != nil {
 		return err
@@ -241,14 +242,20 @@ func initKeybindings(g *gocui.Gui) error {
 		l, _ = filepath.Abs(filepath.Clean(BaseDir + string(filepath.Separator) + l))
 		if _, err := os.Stat(l); !os.IsNotExist(err) {
 			if err := os.Remove(l); err != nil {
-				log.Panicln(err)
+				return err
 			}
 		}
-		listDir(g, BaseDir)
-		_, cy = vl.Cursor()
-		if l, _ = vl.Line(cy); len(l) <= 0 {
-			scrollView(g, v, -1)
-		}
+		// Update cursor state
+		g.Update(func(g *gocui.Gui) error {
+			listDir(g, BaseDir)
+			_, sy := v.Size()
+			// Realign the view
+			if l, e := vl.Line(sy); len(l) <= 0 || e != nil {
+				ox, oy := v.Origin()
+				v.SetOrigin(ox, oy-1)
+			}
+			return nil
+		})
 		return nil
 	}); err != nil {
 		return err

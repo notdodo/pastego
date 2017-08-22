@@ -112,7 +112,7 @@ func getBins(bins int) []pasteJSON {
 				logToFile("Slow down!\n")
 			} else {
 				// Error on marshalling JSON
-				s := fmt.Sprintf("%s\n", string(b))
+				s := fmt.Sprintf("\n%s\n", string(b))
 				logToFile(s)
 			}
 		}
