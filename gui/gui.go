@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	"github.com/jroimartin/gocui"
 )
@@ -84,6 +85,7 @@ func listDir(g *gocui.Gui, dir string) {
 			PrintTo("list", f.Name())
 		}
 	}
+	v.Title = "Files: " + strconv.Itoa(len(files))
 	scrollView(g, v, 0)
 }
 
