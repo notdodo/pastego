@@ -85,7 +85,7 @@ func listDir(g *gocui.Gui, dir string) {
 			PrintTo("list", f.Name())
 		}
 	}
-	v.Title = "Files: " + strconv.Itoa(len(files))
+	v.Title = "Files: " + strconv.Itoa(len(files)+1)
 	scrollView(g, v, 0)
 }
 
