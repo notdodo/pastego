@@ -1,4 +1,4 @@
-# pastego
+# pastego [![Build Status](https://travis-ci.org/edoz90/pastego.svg?branch=master)](https://travis-ci.org/edoz90/pastego)
 
 Scrape pastebin using GO and expression grammar.
                                                          
