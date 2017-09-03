@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"sort"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -466,9 +467,6 @@ var (
 	// errInvalidEncoding is returned when the source is not properly
 	// utf8-encoded.
 	errInvalidEncoding = errors.New("invalid encoding")
-
-	// errNoMatch is returned if no match could be found.
-	errNoMatch = errors.New("no match found")
 )
 
 // Option is a function that can set an option on the parser. It returns
@@ -515,6 +513,16 @@ func Recover(b bool) Option {
 	}
 }
 
+// GlobalStore creates an Option to set a key to a certain value in
+// the globalStore.
+func GlobalStore(key string, value interface{}) Option {
+	return func(p *parser) Option {
+		old := p.cur.globalStore[key]
+		p.cur.globalStore[key] = value
+		return GlobalStore(key, old)
+	}
+}
+
 // ParseFile parses the file identified by filename.
 func ParseFile(filename string, opts ...Option) (i interface{}, err error) {
 	f, err := os.Open(filename)
@@ -522,7 +530,9 @@ func ParseFile(filename string, opts ...Option) (i interface{}, err error) {
 		return nil, err
 	}
 	defer func() {
-		err = f.Close()
+		if closeErr := f.Close(); closeErr != nil {
+			err = closeErr
+		}
 	}()
 	return ParseReader(filename, f, opts...)
 }
@@ -564,6 +574,9 @@ type savepoint struct {
 type current struct {
 	pos  position // start position of the match
 	text []byte   // raw text of the match
+
+	// the globalStore allows the parser to store arbitrary values
+	globalStore map[string]interface{}
 }
 
 // the AST types...
@@ -635,13 +648,14 @@ type litMatcher struct {
 }
 
 type charClassMatcher struct {
-	pos        position
-	val        string
-	chars      []rune
-	ranges     []rune
-	classes    []*unicode.RangeTable
-	ignoreCase bool
-	inverted   bool
+	pos             position
+	val             string
+	basicLatinChars [128]bool
+	chars           []rune
+	ranges          []rune
+	classes         []*unicode.RangeTable
+	ignoreCase      bool
+	inverted        bool
 }
 
 type anyMatcher position
@@ -695,9 +709,10 @@ func (e errList) Error() string {
 // parserError wraps an error with a prefix indicating the rule in which
 // the error occurred. The original error is stored in the Inner field.
 type parserError struct {
-	Inner  error
-	pos    position
-	prefix string
+	Inner    error
+	pos      position
+	prefix   string
+	expected []string
 }
 
 // Error returns the error message.
@@ -713,6 +728,11 @@ func newParser(filename string, b []byte, opts ...Option) *parser {
 		data:     b,
 		pt:       savepoint{position: position{line: 1}},
 		recover:  true,
+		cur: current{
+			globalStore: make(map[string]interface{}),
+		},
+		maxFailPos:      position{col: 1, line: 1},
+		maxFailExpected: make([]string, 0, 20),
 	}
 	p.setOptions(opts)
 	return p
@@ -757,6 +777,11 @@ type parser struct {
 
 	// stats
 	exprCnt int
+
+	// parse fail
+	maxFailPos            position
+	maxFailExpected       []string
+	maxFailInvertExpected bool
 }
 
 // push a variable set on the vstack.
@@ -812,10 +837,10 @@ func (p *parser) out(s string) string {
 }
 
 func (p *parser) addErr(err error) {
-	p.addErrAt(err, p.pt.position)
+	p.addErrAt(err, p.pt.position, []string{})
 }
 
-func (p *parser) addErrAt(err error, pos position) {
+func (p *parser) addErrAt(err error, pos position, expected []string) {
 	var buf bytes.Buffer
 	if p.filename != "" {
 		buf.WriteString(p.filename)
@@ -835,8 +860,27 @@ func (p *parser) addErrAt(err error, pos position) {
 			buf.WriteString("rule " + rule.name)
 		}
 	}
-	pe := &parserError{Inner: err, pos: pos, prefix: buf.String()}
+	pe := &parserError{Inner: err, pos: pos, prefix: buf.String(), expected: expected}
 	p.errs.add(pe)
+}
+
+func (p *parser) failAt(fail bool, pos position, want string) {
+	// process fail if parsing fails and not inverted or parsing succeeds and invert is set
+	if fail == p.maxFailInvertExpected {
+		if pos.offset < p.maxFailPos.offset {
+			return
+		}
+
+		if pos.offset > p.maxFailPos.offset {
+			p.maxFailPos = pos
+			p.maxFailExpected = p.maxFailExpected[:0]
+		}
+
+		if p.maxFailInvertExpected {
+			want = "!" + want
+		}
+		p.maxFailExpected = append(p.maxFailExpected, want)
+	}
 }
 
 // read advances the parser to the next rune.
@@ -939,12 +983,41 @@ func (p *parser) parse(g *grammar) (val interface{}, err error) {
 	val, ok := p.parseRule(g.rules[0])
 	if !ok {
 		if len(*p.errs) == 0 {
-			// make sure this doesn't go out silently
-			p.addErr(errNoMatch)
+			// If parsing fails, but no errors have been recorded, the expected values
+			// for the farthest parser position are returned as error.
+			maxFailExpectedMap := make(map[string]struct{}, len(p.maxFailExpected))
+			for _, v := range p.maxFailExpected {
+				maxFailExpectedMap[v] = struct{}{}
+			}
+			expected := make([]string, 0, len(maxFailExpectedMap))
+			eof := false
+			if _, ok := maxFailExpectedMap["!."]; ok {
+				delete(maxFailExpectedMap, "!.")
+				eof = true
+			}
+			for k := range maxFailExpectedMap {
+				expected = append(expected, k)
+			}
+			sort.Strings(expected)
+			if eof {
+				expected = append(expected, "EOF")
+			}
+			p.addErrAt(errors.New("no match found, expected: "+listJoin(expected, ", ", "or")), p.maxFailPos, expected)
 		}
 		return nil, p.errs.err()
 	}
 	return val, p.errs.err()
+}
+
+func listJoin(list []string, sep string, lastSep string) string {
+	switch len(list) {
+	case 0:
+		return ""
+	case 1:
+		return list[0]
+	default:
+		return fmt.Sprintf("%s %s %s", strings.Join(list[:len(list)-1], sep), lastSep, list[len(list)-1])
+	}
 }
 
 func (p *parser) parseRule(rule *rule) (interface{}, bool) {
@@ -1043,7 +1116,7 @@ func (p *parser) parseActionExpr(act *actionExpr) (interface{}, bool) {
 		p.cur.text = p.sliceFrom(start)
 		actVal, err := act.run(p)
 		if err != nil {
-			p.addErrAt(err, start.position)
+			p.addErrAt(err, start.position, []string{})
 		}
 		val = actVal
 	}
@@ -1086,8 +1159,10 @@ func (p *parser) parseAnyMatcher(any *anyMatcher) (interface{}, bool) {
 	if p.pt.rn != utf8.RuneError {
 		start := p.pt
 		p.read()
+		p.failAt(true, start.position, ".")
 		return p.sliceFrom(start), true
 	}
+	p.failAt(false, p.pt.position, ".")
 	return nil, false
 }
 
@@ -1097,11 +1172,14 @@ func (p *parser) parseCharClassMatcher(chr *charClassMatcher) (interface{}, bool
 	}
 
 	cur := p.pt.rn
+	start := p.pt
+
 	// can't match EOF
 	if cur == utf8.RuneError {
+		p.failAt(false, start.position, chr.val)
 		return nil, false
 	}
-	start := p.pt
+
 	if chr.ignoreCase {
 		cur = unicode.ToLower(cur)
 	}
@@ -1110,9 +1188,11 @@ func (p *parser) parseCharClassMatcher(chr *charClassMatcher) (interface{}, bool
 	for _, rn := range chr.chars {
 		if rn == cur {
 			if chr.inverted {
+				p.failAt(false, start.position, chr.val)
 				return nil, false
 			}
 			p.read()
+			p.failAt(true, start.position, chr.val)
 			return p.sliceFrom(start), true
 		}
 	}
@@ -1121,9 +1201,11 @@ func (p *parser) parseCharClassMatcher(chr *charClassMatcher) (interface{}, bool
 	for i := 0; i < len(chr.ranges); i += 2 {
 		if cur >= chr.ranges[i] && cur <= chr.ranges[i+1] {
 			if chr.inverted {
+				p.failAt(false, start.position, chr.val)
 				return nil, false
 			}
 			p.read()
+			p.failAt(true, start.position, chr.val)
 			return p.sliceFrom(start), true
 		}
 	}
@@ -1132,17 +1214,21 @@ func (p *parser) parseCharClassMatcher(chr *charClassMatcher) (interface{}, bool
 	for _, cl := range chr.classes {
 		if unicode.Is(cl, cur) {
 			if chr.inverted {
+				p.failAt(false, start.position, chr.val)
 				return nil, false
 			}
 			p.read()
+			p.failAt(true, start.position, chr.val)
 			return p.sliceFrom(start), true
 		}
 	}
 
 	if chr.inverted {
 		p.read()
+		p.failAt(true, start.position, chr.val)
 		return p.sliceFrom(start), true
 	}
+	p.failAt(false, start.position, chr.val)
 	return nil, false
 }
 
@@ -1182,6 +1268,11 @@ func (p *parser) parseLitMatcher(lit *litMatcher) (interface{}, bool) {
 		defer p.out(p.in("parseLitMatcher"))
 	}
 
+	ignoreCase := ""
+	if lit.ignoreCase {
+		ignoreCase = "i"
+	}
+	val := fmt.Sprintf("%q%s", lit.val, ignoreCase)
 	start := p.pt
 	for _, want := range lit.val {
 		cur := p.pt.rn
@@ -1189,11 +1280,13 @@ func (p *parser) parseLitMatcher(lit *litMatcher) (interface{}, bool) {
 			cur = unicode.ToLower(cur)
 		}
 		if cur != want {
+			p.failAt(false, start.position, val)
 			p.restore(start)
 			return nil, false
 		}
 		p.read()
 	}
+	p.failAt(true, start.position, val)
 	return p.sliceFrom(start), true
 }
 
@@ -1216,7 +1309,9 @@ func (p *parser) parseNotExpr(not *notExpr) (interface{}, bool) {
 
 	pt := p.pt
 	p.pushV()
+	p.maxFailInvertExpected = !p.maxFailInvertExpected
 	_, ok := p.parseExpr(not.expr)
+	p.maxFailInvertExpected = !p.maxFailInvertExpected
 	p.popV()
 	p.restore(pt)
 	return nil, !ok
@@ -1266,7 +1361,7 @@ func (p *parser) parseSeqExpr(seq *seqExpr) (interface{}, bool) {
 		defer p.out(p.in("parseSeqExpr"))
 	}
 
-	var vals []interface{}
+	vals := make([]interface{}, 0, len(seq.exprs))
 
 	pt := p.pt
 	for _, expr := range seq.exprs {
