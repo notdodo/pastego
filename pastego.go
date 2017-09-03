@@ -8,17 +8,15 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
+	"github.com/edoz90/pastego/filesupport"
 	"github.com/edoz90/pastego/gui"
 	"github.com/edoz90/pastego/pegmatch"
 
 	// import third party libraries
 	"github.com/PuerkitoBio/goquery"
-	"github.com/asaskevich/govalidator"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
 
@@ -28,20 +26,6 @@ var (
 	outputTo   = kingpin.Flag("output", "Folder to save the bins").Short('o').Default("results").String()
 	caseInsens = kingpin.Flag("insensitive", "Search for case-insensitive strings").Default("false").Short('i').Bool()
 )
-
-type pasteJSON struct {
-	ScrapeURL string `json:"scrape_url,-"`
-	FullURL   string `json:"full_url,-"`
-	Date      string `json:"date,-"`
-	Key       string `json:"key,-"`
-	Size      string `json:"size,-"`
-	Expire    string `json:"expire,-"`
-	Title     string `json:"title,-"`
-	Syntax    string `json:"syntax,-"`
-	User      string `json:"user,-"`
-}
-
-var logFile string = ""
 
 // Using PEG check if the bin contains the searched word/s
 func contains(link string, matches []string) (bool, string) {
@@ -64,15 +48,15 @@ func contains(link string, matches []string) (bool, string) {
 	return false, ""
 }
 
-// Read the bin
-func pasteSearcher(link *pasteJSON) {
+// Parse the page and read the content of the bin
+func pasteSearcher(link *filesupport.PasteJSON) {
 	doc, err := goquery.NewDocument(link.ScrapeURL)
 	if err != nil {
 		log.Fatalln(err)
 	}
 	doc.Find("body").Each(func(index int, item *goquery.Selection) {
 		if res, match := contains(item.Text(), strings.Split(*searchFor, ",")); res {
-			if saveToFile(link, item.Text(), match) {
+			if filesupport.SaveToFile(link, item.Text(), match, *outputTo) {
 				var s string
 				if link.Title != "" {
 					s = fmt.Sprintf("%s - %s - %s", match, link.FullURL, link.Title)
@@ -82,26 +66,26 @@ func pasteSearcher(link *pasteJSON) {
 				// Show recent pastes
 				gui.PrintTo("log", s)
 				logToFile(s)
+				// Triggers a reload
 				gui.ListDir()
 			}
 		}
 	})
 }
 
-// Get a list of 'bins' bin
-func getBins(bins int) []pasteJSON {
+// Fetch the bins
+func getBins(bins int) []filesupport.PasteJSON {
 	url := "https://pastebin.com/api_scraping.php?limit=" + fmt.Sprint(bins)
 	slowDown := "Please slow down"
-	trans := &http.Transport{DisableKeepAlives: false}
-	client := &http.Client{Timeout: 60 * time.Second, Transport: trans}
-	var out []pasteJSON
+	client := &http.Client{Timeout: 10 * time.Second}
+	var out []filesupport.PasteJSON
 
 	r, err := client.Get(url)
 	if err != nil {
 		logToFile(err.Error())
 	}
+	defer r.Body.Close()
 	if r != nil {
-		defer r.Body.Close()
 		// read []byte{}
 		b, _ := ioutil.ReadAll(r.Body)
 
@@ -120,55 +104,7 @@ func getBins(bins int) []pasteJSON {
 	return out
 }
 
-func logToFile(s string) {
-	var err error
-	var tmpfile *os.File
-	if logFile != "" {
-		tmpfile, err = os.OpenFile(logFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-	} else {
-		tmpfile, err = ioutil.TempFile("", "pastego")
-		logFile = tmpfile.Name()
-	}
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	if _, err := tmpfile.Write([]byte(s + "\r\n")); err != nil {
-		log.Fatalln(err)
-	}
-
-	defer tmpfile.Close()
-}
-
-func saveToFile(link *pasteJSON, text string, match string) bool {
-	// ./outputDir
-	outputDir, _ := filepath.Abs(filepath.Clean(*outputTo))
-	if err := os.MkdirAll(outputDir, os.FileMode(0775)); err != nil {
-		// Error on creating/reading the output folder
-		logToFile(err.Error())
-		log.Fatalln(err)
-	}
-	// match - pasteTitle
-	var title string
-	if link.Title == "" {
-		title += link.Key
-	} else {
-		title += link.Title
-	}
-	title = fmt.Sprintf("%s__", match) + govalidator.SafeFileName(strings.Replace(title, "/", "_", -1))
-	// ./outputDir/match - pasteTitle
-	filePath := outputDir + string(filepath.Separator) + title
-	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		if err := ioutil.WriteFile(filePath, []byte(text), 0644); err != nil {
-			// Error on writing file, something went wrong
-			logToFile(err.Error())
-			log.Fatalln(err)
-		}
-		return true
-	}
-	return false
-}
-
+// Set the program to fetch `bins` bins every `interval` seconds
 func run(interval int, bins int) {
 	parseBins := func() {
 		for _, v := range getBins(bins) {
@@ -188,6 +124,11 @@ func run(interval int, bins int) {
 	}
 }
 
+// Wrapper to avoid writing log function calls :)
+func logToFile(s string) {
+	filesupport.LogToFile(s)
+}
+
 func main() {
 	kingpin.Parse()
 	logToFile(`
@@ -200,7 +141,7 @@ func main() {
 		╚═╝     ╚═╝  ╚═╝╚══════╝   ╚═╝   ╚══════╝ ╚═════╝  ╚═════╝ 	
 	`)
 
-	// Without a PRO account try to increase the first args and decrease the second
+	// Without a PRO account try to increase the first args and decrease the second.
 	go run(150, 250)
 	gui.SetGui(*outputTo)
 }

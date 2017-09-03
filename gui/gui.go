@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strconv"
 
+	"github.com/edoz90/pastego/filesupport"
 	"github.com/jroimartin/gocui"
 )
 
@@ -92,6 +93,7 @@ func listDir(g *gocui.Gui, dir string) {
 // Set up the layout
 func layout(g *gocui.Gui) error {
 	maxX, maxY := g.Size()
+	// List view: list of all bins founds and saved
 	if v, err := g.SetView("list", 0, 0, maxX/4-5, maxY-1); err != nil {
 		v.Title = "Files"
 		if err != gocui.ErrUnknownView {
@@ -107,6 +109,7 @@ func layout(g *gocui.Gui) error {
 		listDir(g, BaseDir)
 		scrollView(g, v, 0)
 	}
+	// Content view: display the selected file content
 	if v, err := g.SetView("content", maxX/4-4, 0, maxX-1, maxY-12); err != nil {
 		if err != gocui.ErrUnknownView {
 			return err
@@ -114,6 +117,7 @@ func layout(g *gocui.Gui) error {
 		v.Wrap = true
 		v.Title = "Content"
 	}
+	// Log view: shows the actual progress of the bot
 	if v, err := g.SetView("log", maxX/4-4, maxY-11, maxX-1, maxY-1); err != nil {
 		if err != gocui.ErrUnknownView {
 			return err
@@ -123,14 +127,6 @@ func layout(g *gocui.Gui) error {
 		v.Autoscroll = true
 	}
 	return nil
-}
-
-func GetGui(g *gocui.Gui, gui string) *gocui.View {
-	v, e := g.View(gui)
-	if e != nil {
-		log.Panicln(e)
-	}
-	return v
 }
 
 func PrintTo(gui string, s string) error {
@@ -193,40 +189,51 @@ func jumpToNextUp(g *gocui.Gui, v *gocui.View) error {
 }
 
 func initKeybindings(g *gocui.Gui) error {
+	// quit
 	if err := g.SetKeybinding("", gocui.KeyCtrlC, gocui.ModNone, quit); err != nil {
 		return err
 	}
+	// quit
 	if err := g.SetKeybinding("", 'q', gocui.ModNone, quit); err != nil {
 		return err
 	}
+	// move up
 	if err := g.SetKeybinding("list", gocui.KeyArrowUp, gocui.ModNone, scrollUp); err != nil {
 		return err
 	}
+	// move up
 	if err := g.SetKeybinding("list", 'k', gocui.ModNone, scrollUp); err != nil {
 		return err
 	}
+	// move down
 	if err := g.SetKeybinding("list", gocui.KeyArrowDown, gocui.ModNone, scrollDown); err != nil {
 		return err
 	}
+	// move down
 	if err := g.SetKeybinding("list", 'j', gocui.ModNone, scrollDown); err != nil {
 		return err
 	}
+	// jump forward
 	if err := g.SetKeybinding("list", 'n', gocui.ModNone, func(g *gocui.Gui, v *gocui.View) error {
 		return scrollView(g, v, 15)
 	}); err != nil {
 		return err
 	}
+	// jump to next letter
 	if err := g.SetKeybinding("list", 'N', gocui.ModNone, jumpToNextDown); err != nil {
 		return err
 	}
+	// jump backward
 	if err := g.SetKeybinding("list", 'p', gocui.ModNone, func(g *gocui.Gui, v *gocui.View) error {
 		return scrollView(g, v, -15)
 	}); err != nil {
 		return err
 	}
+	// jump to previous letter
 	if err := g.SetKeybinding("list", 'P', gocui.ModNone, jumpToNextUp); err != nil {
 		return err
 	}
+	// move to first element
 	if err := g.SetKeybinding("list", gocui.KeyHome, gocui.ModNone, func(g *gocui.Gui, v *gocui.View) error {
 		g.Update(func(g *gocui.Gui) error {
 			v.SetOrigin(0, 0)
@@ -237,27 +244,25 @@ func initKeybindings(g *gocui.Gui) error {
 	}); err != nil {
 		return err
 	}
+	// delete an entry/file
 	if err := g.SetKeybinding("list", 'd', gocui.ModNone, func(g *gocui.Gui, v *gocui.View) error {
 		vl, _ := g.View("list")
 		_, cy := vl.Cursor()
 		l, _ := vl.Line(cy)
-		l, _ = filepath.Abs(filepath.Clean(BaseDir + string(filepath.Separator) + l))
-		if _, err := os.Stat(l); !os.IsNotExist(err) {
-			if err := os.Remove(l); err != nil {
-				return err
-			}
+
+		if err := filesupport.DeleteFile(l, BaseDir); err == nil {
+			// Update cursor state
+			g.Update(func(g *gocui.Gui) error {
+				listDir(g, BaseDir)
+				_, sy := v.Size()
+				// Realign the view
+				if l, e := vl.Line(sy); len(l) <= 0 || e != nil {
+					ox, oy := v.Origin()
+					v.SetOrigin(ox, oy-1)
+				}
+				return nil
+			})
 		}
-		// Update cursor state
-		g.Update(func(g *gocui.Gui) error {
-			listDir(g, BaseDir)
-			_, sy := v.Size()
-			// Realign the view
-			if l, e := vl.Line(sy); len(l) <= 0 || e != nil {
-				ox, oy := v.Origin()
-				v.SetOrigin(ox, oy-1)
-			}
-			return nil
-		})
 		return nil
 	}); err != nil {
 		return err
