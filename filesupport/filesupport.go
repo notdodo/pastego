@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/asaskevich/govalidator"
 )
@@ -29,6 +30,7 @@ var logFile string = ""
 func LogToFile(s string) {
 	var err error
 	var tmpfile *os.File
+	var t = time.Now().Format(time.RFC3339)
 	if logFile != "" {
 		tmpfile, err = os.OpenFile(logFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	} else {
@@ -39,7 +41,7 @@ func LogToFile(s string) {
 		log.Fatalln(err)
 	}
 
-	if _, err := tmpfile.Write([]byte(s + "\r\n")); err != nil {
+	if _, err := tmpfile.Write([]byte(t + " - " + s + "\r\n")); err != nil {
 		log.Fatalln(err)
 	}
 
