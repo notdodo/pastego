@@ -85,7 +85,7 @@ func getBins(bins int) []filesupport.PasteJSON {
 		logToFile(err.Error())
 	}
 	defer r.Body.Close()
-	if r != nil {
+	if r != nil && err == nil {
 		// read []byte{}
 		b, _ := ioutil.ReadAll(r.Body)
 

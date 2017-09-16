@@ -19,21 +19,20 @@ var MainGui *gocui.Gui
 func scrollView(g *gocui.Gui, v *gocui.View, dy int) error {
 	if v != nil {
 		_, cy := v.Cursor()
+		vc, _ := g.View("content")
+		vl, _ := g.View("list")
 		l, _ := v.Line(cy + dy)
 		if len(l) > 0 {
-			moveTo(dy, v)
-
-			// Update the view
 			g.Update(func(g *gocui.Gui) error {
-				vc, _ := g.View("content")
+				moveTo(dy, v)
+
+				// Update the view
 				vc.Clear()
-				vl, _ := g.View("list")
 				_, cy := vl.Cursor()
 				l, _ := vl.Line(cy)
 				l = filepath.Clean(BaseDir + string(filepath.Separator) + l)
 				if _, err := os.Stat(l); err == nil {
-					b, err := ioutil.ReadFile(l)
-					if err == nil {
+					if b, err := ioutil.ReadFile(l); err == nil {
 						PrintTo("content", string(b))
 					}
 				}
@@ -81,13 +80,16 @@ func listDir(g *gocui.Gui, dir string) {
 	v.Clear()
 	dir, _ = filepath.Abs(filepath.Clean(dir))
 	files, _ := ioutil.ReadDir(dir)
-	for _, f := range files {
-		if !f.IsDir() {
-			PrintTo("list", f.Name())
+	g.Update(func(g *gocui.Gui) error {
+		for _, f := range files {
+			if !f.IsDir() {
+				PrintTo("list", f.Name())
+			}
 		}
-	}
-	v.Title = "Files: " + strconv.Itoa(len(files)+1)
-	scrollView(g, v, 0)
+		v.Title = "Files: " + strconv.Itoa(len(files)+1)
+		scrollView(g, v, 0)
+		return nil
+	})
 }
 
 // Set up the layout
