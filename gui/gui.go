@@ -76,11 +76,11 @@ func ListDir() {
 
 //Get the list the of the saved files
 func listDir(g *gocui.Gui, dir string) {
-	v, _ := g.View("list")
-	v.Clear()
-	dir, _ = filepath.Abs(filepath.Clean(dir))
-	files, _ := ioutil.ReadDir(dir)
 	g.Update(func(g *gocui.Gui) error {
+		v, _ := g.View("list")
+		v.Clear()
+		dir, _ = filepath.Abs(filepath.Clean(dir))
+		files, _ := ioutil.ReadDir(dir)
 		for _, f := range files {
 			if !f.IsDir() {
 				PrintTo("list", f.Name())
