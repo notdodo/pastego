@@ -83,6 +83,7 @@ func getBins(bins int) []filesupport.PasteJSON {
 	r, err := client.Get(url)
 	if err != nil {
 		logToFile(err.Error())
+		return out
 	}
 	defer r.Body.Close()
 	if r != nil && err == nil {
