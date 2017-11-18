@@ -86,7 +86,7 @@ func listDir(g *gocui.Gui, dir string) {
 				PrintTo("list", f.Name())
 			}
 		}
-		v.Title = "Files: " + strconv.Itoa(len(files)+1)
+		v.Title = "Files: " + strconv.Itoa(len(files))
 		scrollView(g, v, 0)
 		return nil
 	})
@@ -97,13 +97,13 @@ func layout(g *gocui.Gui) error {
 	maxX, maxY := g.Size()
 	// List view: list of all bins founds and saved
 	if v, err := g.SetView("list", 0, 0, maxX/4-5, maxY-1); err != nil {
-		v.Title = "Files"
 		if err != gocui.ErrUnknownView {
 			return err
 		}
 		if _, err := g.SetCurrentView("list"); err != nil {
 			return err
 		}
+		v.Title = "Files"
 		v.Highlight = true
 		v.FgColor = gocui.ColorCyan | gocui.AttrBold
 		v.SelBgColor = gocui.ColorCyan

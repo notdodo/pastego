@@ -80,7 +80,7 @@ func SaveToFile(link *PasteJSON, text string, match string, outputTo string) boo
 
 // Delete a file when is not interesting
 func DeleteFile(l string, baseDir string) error {
-	f, _ := filepath.Abs(filepath.Clean(baseDir + string(filepath.Separator) + l))
+	f, _ := filepath.Abs(baseDir + string(filepath.Separator) + l)
 	if _, err := os.Stat(f); !os.IsNotExist(err) {
 		if err := os.Remove(f); err != nil {
 			return err
