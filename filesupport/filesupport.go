@@ -24,7 +24,7 @@ type PasteJSON struct {
 	User      string `json:"user,-"`
 }
 
-var logFile string = ""
+var logFile string
 
 // Log a string to a temp file
 func LogToFile(s string) {
