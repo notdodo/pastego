@@ -135,10 +135,9 @@ func PrintTo(gui string, s string) error {
 	v, e := MainGui.View(gui)
 	if e != nil {
 		return e
-	} else {
-		fmt.Fprintln(v, s)
-		return nil
 	}
+	fmt.Fprintln(v, s)
+	return nil
 }
 
 func quit(g *gocui.Gui, v *gocui.View) error {
