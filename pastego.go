@@ -75,7 +75,7 @@ func pasteSearcher(link *filesupport.PasteJSON) {
 
 // Fetch the bins
 func getBins(bins int) []filesupport.PasteJSON {
-	url := "https://pastebin.com/api_scraping.php?limit=" + fmt.Sprint(bins)
+	url := "https://scrape.pastebin.com/api_scraping.php?limit=" + fmt.Sprint(bins)
 	slowDown := "Please slow down"
 	client := &http.Client{Timeout: 10 * time.Second}
 	var out []filesupport.PasteJSON
