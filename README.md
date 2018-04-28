@@ -1,6 +1,6 @@
 # pastego [![Build Status](https://travis-ci.org/edoz90/pastego.svg?branch=master)](https://travis-ci.org/edoz90/pastego)
 
-Scrape pastebin using GO and expression grammar.
+ Scrape/Parse Pastebin using GO and expression grammar.
                                                          
 ![pastego.png](https://raw.githubusercontent.com/edoz90/pastego/support/pastego.png)
 
