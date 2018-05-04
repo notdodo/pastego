@@ -23,7 +23,7 @@ import (
 // Command line args
 var (
 	searchFor  = kingpin.Flag("search", "Strings to search with optional bool operator(&&, ||, ~), i.e: \"password,some || (thing && ~maybenot), \"").Short('s').Default("pass").String()
-	outputTo   = kingpin.Flag("output", "Folder to save the bins").Short('o').Default("results").String()
+    outputTo   = kingpin.Flag("output", "Folder to save the bins. Default : './results'").Short('o').Default("results").String()
 	caseInsens = kingpin.Flag("insensitive", "Search for case-insensitive strings").Default("false").Short('i').Bool()
 )
 
