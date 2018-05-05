@@ -19,6 +19,8 @@ You can use boolean operators to reduce false positive
 
 `pastego -s "quake && ~earthquake, password && ~(php || sudo || Linux || '<body>')"`
 
+This command will search for bins with `quake` but not `earthquake` words and for bins with `password` but not `php`, `sudo`, `Linux`, `<body>` words.
+
 ```
 usage: pastego [<flags>]
 
