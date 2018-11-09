@@ -1,6 +1,6 @@
 # pastego [![Build Status](https://travis-ci.org/edoz90/pastego.svg?branch=master)](https://travis-ci.org/edoz90/pastego)
 
- Scrape/Parse Pastebin using GO and expression grammar.
+ Scrape/Parse Pastebin using GO and grammar expression (PEG).
                                                          
 ![pastego.png](https://raw.githubusercontent.com/edoz90/pastego/support/pastego.png)
 
@@ -65,13 +65,19 @@ Supported expression/operators:
 
 ## Requirements
 
+#### [goquery](https://github.com/PuerkitoBio/goquery)
+
 `go get -u "github.com/PuerkitoBio/goquery"`
+
+#### [kingpin](https://github.com/alecthomas/kingpin)
 
 `go get -u "gopkg.in/alecthomas/kingpin.v2"`
 
+#### [gocui](https://github.com/jroimartin/gocui)
+
 `go get -u "github.com/jroimartin/gocui"`
 
-To create the code from PEG use pigeon:
+To create the code from PEG use [pigeon](https://github.com/mna/pigeon):
 
 `go get -u github.com/mna/pigeon`
 
