@@ -23,7 +23,7 @@ import (
 // Command line args
 var (
 	searchFor  = kingpin.Flag("search", "Strings to search with optional bool operator(&&, ||, ~), i.e: \"password,some || (thing && ~maybenot), \"").Short('s').Default("pass").String()
-    outputTo   = kingpin.Flag("output", "Folder to save the bins. Default : './results'").Short('o').Default("results").String()
+	outputTo   = kingpin.Flag("output", "Folder to save the bins. Default : './results'").Short('o').Default("results").String()
 	caseInsens = kingpin.Flag("insensitive", "Search for case-insensitive strings").Default("false").Short('i').Bool()
 )
 
@@ -50,7 +50,14 @@ func contains(link string, matches []string) (bool, string) {
 
 // Parse the page and read the content of the bin
 func pasteSearcher(link *filesupport.PasteJSON) {
-	doc, err := goquery.NewDocument(link.ScrapeURL)
+	client := &http.Client{Timeout: 10 * time.Second}
+	response, err := client.Get(link.ScrapeURL)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer response.Body.Close()
+
+	doc, err := goquery.NewDocumentFromReader(response.Body)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -86,7 +93,7 @@ func getBins(bins int) []filesupport.PasteJSON {
 		return out
 	}
 	defer r.Body.Close()
-	if r != nil && err == nil {
+	if r != nil {
 		// read []byte{}
 		b, _ := ioutil.ReadAll(r.Body)
 

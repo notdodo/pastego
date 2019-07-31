@@ -131,13 +131,11 @@ func layout(g *gocui.Gui) error {
 	return nil
 }
 
-func PrintTo(gui string, s string) error {
+func PrintTo(gui string, s string) {
 	v, e := MainGui.View(gui)
-	if e != nil {
-		return e
+	if e == nil {
+		fmt.Fprintln(v, s)
 	}
-	fmt.Fprintln(v, s)
-	return nil
 }
 
 func quit(g *gocui.Gui, v *gocui.View) error {
