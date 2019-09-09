@@ -1,4 +1,4 @@
-# pastego [![Build Status](https://travis-ci.org/edoz90/pastego.svg?branch=master)](https://travis-ci.org/edoz90/pastego)
+# pastego [![Build Status](https://travis-ci.org/edoz90/pastego.svg?branch=master)](https://travis-ci.org/edoz90/pastego) <a href="https://www.buymeacoffee.com/RFPDz1AeK" target="_blank"><img src="https://bmc-cdn.nyc3.digitaloceanspaces.com/BMC-button-images/custom_images/yellow_img.png" alt="Buy Me A Coffee" style="height: auto !important;width: auto !important;" ></a>
 
  Scrape/Parse Pastebin using GO and grammar expression (PEG).
                                                          
