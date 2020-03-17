@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"github.com/edoz90/pastego/filesupport"
+	"github.com/notdodo/pastego/filesupport"
 	"github.com/jroimartin/gocui"
 )
 
