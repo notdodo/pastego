@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/edoz90/pastego/pegmatch"
+	"github.com/notdodo/pastego/pegmatch"
 )
 
 func TestPegmatchSimple(t *testing.T) {
