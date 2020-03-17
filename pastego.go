@@ -11,9 +11,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/edoz90/pastego/filesupport"
-	"github.com/edoz90/pastego/gui"
-	"github.com/edoz90/pastego/pegmatch"
+	"github.com/notdodo/pastego/filesupport"
+	"github.com/notdodo/pastego/gui"
+	"github.com/notdodo/pastego/pegmatch"
 
 	// import third party libraries
 	"github.com/PuerkitoBio/goquery"
