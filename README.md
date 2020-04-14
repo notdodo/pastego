@@ -7,7 +7,7 @@ Scrape/Parse Pastebin using GO and grammar expression (PEG).
 
 ## Installation
 
-`$ go get -u github.com/edoz90/pastego`
+`$ go get -u github.com/notdodo/pastego`
 
 ## Usage
 
