@@ -9,10 +9,10 @@ import (
 )
 
 func TestPegmatchSimple(t *testing.T) {
-	m := [2]string{"password", "quake && ~earthquake"}
+	m := [2]string{"{password}", "quake && ~earthquake"}
 	countMatches := 0
 	correctMatches := 2
-	pegmatch.PasteContentString = "my password is: quake"
+	pegmatch.PasteContentString = "my {password} is: quake"
 	for _, mtch := range m {
 		mtch = strings.TrimSpace(mtch)
 		got, err := pegmatch.ParseReader("", bytes.NewBufferString(mtch))

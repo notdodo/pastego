@@ -63,7 +63,7 @@ BoolOp <- ( "&&" / "||") {
     return string(c.text), nil
 }
 
-Search <- [A-Za-z0-9!@#$%^?/*-+.><]+ {
+Search <- [A-Za-z0-9!@#$%^?/*-+.><{}]+ {
     return strings.Contains(PasteContentString, string(c.text)), nil
 } / NotOp _ search:Search {
     return !eval(search, nil) , nil
