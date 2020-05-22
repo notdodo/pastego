@@ -53,7 +53,8 @@ func pasteSearcher(link *filesupport.PasteJSON) {
 	client := &http.Client{Timeout: 10 * time.Second}
 	response, err := client.Get(link.ScrapeURL)
 	if err != nil {
-		log.Fatal(err)
+		logToFile(err.Error())
+		return
 	}
 	defer response.Body.Close()
 
