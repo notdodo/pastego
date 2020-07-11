@@ -63,7 +63,13 @@ func pasteSearcher(link *filesupport.PasteJSON) {
 		log.Fatalln(err)
 	}
 	doc.Find("body").Each(func(index int, item *goquery.Selection) {
-		if res, match := contains(item.Text(), strings.Split(*searchFor, ",")); res {
+		bodyResult, bodyMatch := contains(item.Text(), strings.Split(*searchFor, ","))
+		titleResult, titleMatch := contains(link.Title, strings.Split(*searchFor, ","))
+		match := bodyMatch
+		if bodyResult || titleResult {
+			if titleResult {
+				match = titleMatch
+			}
 			if filesupport.SaveToFile(link, item.Text(), match, *outputTo) {
 				var s string
 				if link.Title != "" {
@@ -142,12 +148,12 @@ func main() {
 	kingpin.Parse()
 	logToFile(`
 
-		██████╗  █████╗ ███████╗████████╗███████╗ ██████╗  ██████╗ 
+		██████╗  █████╗ ███████╗████████╗███████╗ ██████╗  ██████╗
 		██╔══██╗██╔══██╗██╔════╝╚══██╔══╝██╔════╝██╔════╝ ██╔═══██╗
 		██████╔╝███████║███████╗   ██║   █████╗  ██║  ███╗██║   ██║
 		██╔═══╝ ██╔══██║╚════██║   ██║   ██╔══╝  ██║   ██║██║   ██║
 		██║     ██║  ██║███████║   ██║   ███████╗╚██████╔╝╚██████╔╝
-		╚═╝     ╚═╝  ╚═╝╚══════╝   ╚═╝   ╚══════╝ ╚═════╝  ╚═════╝ 	
+		╚═╝     ╚═╝  ╚═╝╚══════╝   ╚═╝   ╚══════╝ ╚═════╝  ╚═════╝
 	`)
 
 	// Without a PRO account try to increase the first args and decrease the second.
